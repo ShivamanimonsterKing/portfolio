@@ -3,26 +3,42 @@ const dev = document.querySelector('#developer');
 const speech = document.querySelector('#speech');
 const dot = document.querySelector('.cursor-dot');
 const ring = document.querySelector('.cursor-ring');
+const eyes = document.querySelectorAll('.eye');
+let currentReaction = '';
 
 function setReaction(type) {
   if (!dev || !speech) return;
 
-  if (type === 'left') {
-    dev.style.transform = 'translateX(-18px) rotate(-3deg)';
-    speech.textContent = 'Anyone here on the left?';
-  } else if (type === 'right') {
-    dev.style.transform = 'translateX(18px) rotate(3deg)';
-    speech.textContent = 'Anyone here on the right?';
-  } else {
-    dev.style.transform = 'translateY(-5px) scale(1.02)';
-    speech.textContent = "Hey, it's you!";
-  }
+  const reactions = {
+    left: { x: '-9px', rotate: '-2deg', message: 'Exploring AI & web!' },
+    right: { x: '9px', rotate: '2deg', message: 'Curious about my work?' },
+    center: { x: '0px', rotate: '0deg', message: "Let's build something useful." }
+  };
+  const reaction = reactions[type] || reactions.center;
+  dev.style.setProperty('--lean-x', reaction.x);
+  dev.style.setProperty('--lean-rotate', reaction.rotate);
+  if (currentReaction !== type) speech.textContent = reaction.message;
+  currentReaction = type;
 }
 
 function resetReaction() {
   if (!dev || !speech) return;
-  dev.style.transform = '';
+  dev.style.removeProperty('--lean-x');
+  dev.style.removeProperty('--lean-rotate');
   speech.textContent = window.innerWidth <= 900 ? 'Tap around — I’m here.' : 'Move around — I’m here.';
+  currentReaction = '';
+}
+
+function trackEyes(clientX, clientY) {
+  eyes.forEach(eye => {
+    const bounds = eye.getBoundingClientRect();
+    const deltaX = clientX - (bounds.left + bounds.width / 2);
+    const deltaY = clientY - (bounds.top + bounds.height / 2);
+    const distance = Math.hypot(deltaX, deltaY) || 1;
+    const offset = Math.min(1, 4 / distance);
+    eye.style.setProperty('--gaze-x', `${deltaX * offset}px`);
+    eye.style.setProperty('--gaze-y', `${deltaY * offset}px`);
+  });
 }
 
 function handleHeroMove(clientX, clientY) {
@@ -48,6 +64,8 @@ if (hero) {
     if (touch) handleHeroMove(touch.clientX, touch.clientY);
   }, { passive: true });
 }
+
+document.addEventListener('pointermove', e => trackEyes(e.clientX, e.clientY));
 
 let rx = 0, ry = 0, mx = 0, my = 0;
 const canUseFinePointer = window.matchMedia('(pointer: fine)').matches;
